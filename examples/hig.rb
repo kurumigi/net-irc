@@ -83,6 +83,10 @@ Use IM instead of any APIs (e.g. post)
 
 Don't make keywords' channels.
 
+### public
+
+Read public timelines.
+
 ### ratio=<timeline>:<friends>:<channel>
 
 ## License
@@ -486,7 +490,7 @@ class HaikuIrcGateway < Net::IRC::Server::Session
 
 	private
 	def check_timeline
-		api("statuses/friends_timeline").reverse_each do |s|
+		api(@opts.key?("public") ? "statuses/public_timeline" : "statuses/friends_timeline").reverse_each do |s|
 			begin
 				id = s["id"]
 				next if id.nil? || @timeline.include?(id)
@@ -722,7 +726,7 @@ class HaikuIrcGateway < Net::IRC::Server::Session
 	# return rid of most recent matched status with text
 	def rid_for(text)
 		target = Regexp.new(Regexp.quote(text.strip), "i")
-		status = api("statuses/friends_timeline").find {|i|
+		status = api(@opts.key?("public") ? "statuses/public_timeline" : "statuses/friends_timeline").find {|i|
 			next false if i["user"]["name"] == @nick # 自分は除外
 			i["text"] =~ target
 		}
