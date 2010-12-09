@@ -332,6 +332,30 @@ class HaikuIrcGateway < Net::IRC::Server::Session
 		when "typo"
 			@typo = !@typo
 			post nil, NOTICE, main_channel, "typo mode: #{@typo}"
+		when "follow"
+			target = args[0]
+			st  = @tmap[target]
+			if st
+				id = st["user"]["id"]
+				res = api("friendships/create/#{id}", {})
+				post nil, NOTICE, main_channel, "Follow: #{res["screen_name"]}"
+				id = "@#{id}" if @opts.key?("athack")
+				post "#{id}!#{id}@#{api_base.host}", JOIN, main_channel
+			else
+				post nil, NOTICE, main_channel, "No such id or status #{target}"
+			end
+		when "unfollow", "remove"
+			target = args[0]
+			st  = @tmap[target]
+			if st
+				id = st["user"]["id"]
+				res = api("friendships/destroy/#{id}", {})
+				post nil, NOTICE, main_channel, "Unfollow: #{res["screen_name"]}"
+				id = "@#{id}" if @opts.key?("athack")
+				post "#{id}!#{id}@#{api_base.host}", PART, main_channel, ""
+			else
+				post nil, NOTICE, main_channel, "No such id or status #{target}"
+			end
 		end
 	rescue ApiFailed => e
 		log e.inspect
