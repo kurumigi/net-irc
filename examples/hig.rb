@@ -371,6 +371,23 @@ class HaikuIrcGateway < Net::IRC::Server::Session
 			else
 				post nil, NOTICE, main_channel, "No such id or status #{target}"
 			end
+		when "post", "send"
+			channel = args[0]
+			message = args[1]
+			begin
+				if @opts.key?("alwaysim") && @im && @im.connected? # in jabber mode, using jabber post
+					message = "##{channel} #{message}"
+					ret = @im.deliver(jabber_bot_id, message)
+					post "#{nick}!#{nick}@#{api_base.host}", TOPIC, channel, message
+				else
+					ret = api("statuses/update", {"status" => "#{message}", "keyword" => channel})
+					log "Status Updated via API"
+				end
+				raise ApiFailed, "API failed" unless ret
+				check_timeline
+			rescue => e
+				log "Some Error Happened on Sending #{message}. #{e}"
+			end
 		when "follow"
 			target = args[0]
 			st  = @tmap[target]
