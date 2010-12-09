@@ -251,7 +251,11 @@ class HaikuIrcGateway < Net::IRC::Server::Session
 					file = Net::HTTP.get(URI("http://lab.lowreal.net/test/haiku.rb/?text=" + URI.escape(message)))
 					ret = api("statuses/update", {"file" => file, "in_reply_to_status_id" => rid, "keyword" => channel})
 				else
-					ret = api("statuses/update", {"status" => "id:#{@real}=#{message}", "in_reply_to_status_id" => rid, "keyword" => channel})
+					if channel != ""
+						ret = api("statuses/update", {"status" => "#{message}", "in_reply_to_status_id" => rid, "keyword" => channel})
+					else
+						ret = api("statuses/update", {"status" => "id:#{@real}=#{message}", "in_reply_to_status_id" => rid, "keyword" => ""})
+					end
 				end
 				log "Status Updated via API"
 			end
