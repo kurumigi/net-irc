@@ -79,6 +79,10 @@ Be careful for managing password.
 
 Use IM instead of any APIs (e.g. post)
 
+### nochannel
+
+Don't make keywords' channels.
+
 ### ratio=<timeline>:<friends>:<channel>
 
 ## License
@@ -477,6 +481,7 @@ class HaikuIrcGateway < Net::IRC::Server::Session
 	end
 
 	def check_keywords
+		return if @opts.key?("nochannel")
 		keywords = api("statuses/keywords").map {|i| "##{i["title"]}" }
 		current  = @channels.keys
 		current.delete main_channel
