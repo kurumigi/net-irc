@@ -274,7 +274,7 @@ class HaikuIrcGateway < Net::IRC::Server::Session
 	end
 
 	def on_ctcp(target, message)
-		_, command, *args = message.split(/\s+/)
+		_, command, *args = message.split(/\s+/, 4)
 		case command
 		when "list"
 			nick = args[0]
@@ -332,6 +332,45 @@ class HaikuIrcGateway < Net::IRC::Server::Session
 		when "typo"
 			@typo = !@typo
 			post nil, NOTICE, main_channel, "typo mode: #{@typo}"
+		when "reply", "re"
+			target = args[0]
+			message = args[1]
+			ret = nil
+			st  = @tmap[target]
+			id  = rid_for(target)
+			if st || id
+				if @im && @im.connected?
+					# IM のときはいろいろめんどうなことする
+					nick, count = *st
+					pos = @counters[nick] - count
+					@log.debug "%p %s %d/%d => %d" % [
+						st,
+						nick,
+						count,
+						@counters[nick],
+						pos
+					]
+					res = api("statuses/user_timeline", { "id" => nick })
+					raise ApiFailed, "#{nick} may be private mode" if res.empty?
+					if res[pos]
+						id = res[pos]["id"]
+					else
+						raise ApiFailed, "#{pos} of #{nick} is not found."
+					end
+				else
+					id = st["id"]
+				end
+				begin
+					ret = api("statuses/update", {"status" => "#{message}", "in_reply_to_status_id" => id, "keyword" => ""})
+					log "Status Updated via API"
+					raise ApiFailed, "API failed" unless ret
+					check_timeline
+				rescue => e
+					log "Some Error Happened on Sending #{message}. #{e}"
+				end
+			else
+				post nil, NOTICE, main_channel, "No such id or status #{target}"
+			end
 		when "follow"
 			target = args[0]
 			st  = @tmap[target]
