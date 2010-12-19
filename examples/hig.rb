@@ -453,6 +453,7 @@ class HaikuIrcGateway < Net::IRC::Server::Session
 	end
 
 	def on_part(m)
+		return if @opts.key?("nochannel")
 		channel = m.params[0]
 		return if channel == main_channel
 		@channels.delete(channel)
